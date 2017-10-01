@@ -23,29 +23,33 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.store.LockObtainFailedException;
 
 public class generateindex {
 
-	public static void main(String args[]) throws IOException {
-		String indexPath = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\index";
+	private static IndexWriter indwriter;
+
+	public static void main(String args[]) throws CorruptIndexException,LockObtainFailedException, IOException{
+		
+		String indexPath = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\lindex";
 		Directory dir = FSDirectory.open(Paths.get(indexPath));
-		Analyzer analyzer = new StandardAnalyzer();
+	    Analyzer analyzer = new StandardAnalyzer();
 		IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 		iwc.setOpenMode(OpenMode.CREATE);
-		IndexWriter indwriter = new IndexWriter(dir, iwc);
+		indwriter = new IndexWriter(dir, iwc);
 
-		String filepath = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\corpus";
-		File[] files = new File(filepath).listFiles();
+      String filepath = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\corpus";
+	  File[] files = new File(filepath).listFiles();
 
+	  
 		for (File filep : files) {
 
-			String fileinstring = FileUtils.readFileToString(filep, "UTF-8");
-
-			Document document = new Document();
+			/* for each file in corpus */
+			
+		String fileinstring = FileUtils.readFileToString(filep,"UTF-8"); 
+  		
 			String reg1 = "<DOC>";
 			Pattern p1 = Pattern.compile(reg1);
 			Matcher m1 = p1.matcher(fileinstring);
@@ -55,52 +59,59 @@ public class generateindex {
 			Matcher m2 = p2.matcher(fileinstring);
 
 			ArrayList<String> docarr = new ArrayList<String>();
-			int k = 0;
+		
+			/*extracting text between doc tags*/
+			
 			while (m1.find()) {
-				int i = m1.end();
+				int i = m1.end()+1;
 				if (m2.find()) {
 					int j = m2.start();
-					docarr.add(fileinstring.substring(i++, j));
+					docarr.add(fileinstring.substring(i, j));
 
 				}
 			}
-			/* for each Field a regx and a string to store it's value is created */
-			// for DOCNO
-			String docno = "";
-			String regdoc = "<DOCNO>([\\s\\w]*)</DOCNO>";
-			Pattern pdoc = Pattern.compile(regdoc);
-
-			// for HEAD
-			String head = "";
-			String reghead = "<HEAD>([\\s\\w]*)</HEAD>";
-			Pattern phead = Pattern.compile(reghead);
-
-			// for BYLINE
-			String bline = "";
-			String regbline = "<BYLINE>([\\s\\w]*)</BYLINE>";
-			Pattern pbline = Pattern.compile(regbline);
-
-			// for DATELINE
-			String dline = "";
-			String regdline = "<DATELINE>([\\s\\w]*)</DATELINE>";
-			Pattern pdline = Pattern.compile(regdline);
-
-			// for TEXT
-			String text = "";
-			String regtext = "<DOCNO>([\\s\\w]*)</DOCNO>";
-			Pattern ptext = Pattern.compile(regtext);
-
+			
 			int l = 0;
 			while (l < docarr.size()) {
+			
 				String st = docarr.get(l);
 				int x = 0;
-
+				/* for each document */
+				
+				Document document = new Document();	
+				
+				/* for each Field a regx and a string to store it's value is created */
+				// for DOCNO
+				String docno = "";
+				String regdoc = "<DOCNO>([^<>]*)</DOCNO>";
+				Pattern pdoc = Pattern.compile(regdoc);
 				Matcher mdoc = pdoc.matcher(st);
+				
+				// for HEAD
+				String head = "";
+				String reghead = "<HEAD>([^<>]*)</HEAD>";
+				Pattern phead = Pattern.compile(reghead);
 				Matcher mhead = phead.matcher(st);
+				
+				// for BYLINE
+				String bline = "";
+				String regbline = "<BYLINE>([^<>]*)</BYLINE>";
+				Pattern pbline = Pattern.compile(regbline);
 				Matcher mbline = pbline.matcher(st);
+				
+				// for DATELINE
+				String dline = "";
+				String regdline = "<DATELINE>([^<>]*)</DATELINE>";
+				Pattern pdline = Pattern.compile(regdline);
 				Matcher mdline = pdline.matcher(st);
+				
+				// for TEXT
+				String text = "";
+				String regtext = "<TEXT>([^<>]*)</TEXT>";
+				Pattern ptext = Pattern.compile(regtext);
 				Matcher mtext = ptext.matcher(st);
-
+				
+								
 				// in this loop matched filed is checked
 
 				while (x < st.length()) {
@@ -121,118 +132,94 @@ public class generateindex {
 						text = text.concat(mtext.group(1));
 						x = mtext.end() + 1;
 					} else {
-						System.out.println("no match to tag");
-						break;
+						
+						break; 						
 					}
 
 				}
-			}
+				
 
 			int check = 0; // to check if any field is added
 
-			if (docno != null) {
+			if (docno != "") {
 				document.add(new StringField("DOCNO", docno, Field.Store.YES));
 				check++;
 			}
-			if (head != null) {
+			if (head != "") {
 				document.add(new TextField("HEAD", head, Field.Store.YES));
 				check++;
 			}
-			if (dline != null) {
+			if (dline != "") {
 				document.add(new TextField("DATELINE", dline, Field.Store.YES));
 				check++;
 			}
-			if (bline != null) {
+			if (bline != "") {
 				document.add(new TextField("BYLINE", bline, Field.Store.YES));
 				check++;
 			}
-			if (text != null) {
+			if (text != "") {
 				document.add(new TextField("TEXT", text, Field.Store.YES));
 				check++;
 			}
 			if (check != 0) {
 				indwriter.addDocument(document);
+				
 			}
 
+			l++;  //next doc
 		}
-
-		indwriter.close();
-		checkindex();
-	}
-
 	
+	     
+	}	
+		  indwriter.forceMerge(1);
+		  indwriter.commit();  
+	       System.out.println(indwriter.numDocs());
+		   indwriter.close();
+		   
+		   getstat();
+	}
+	public static void getstat() throws IOException {
+		String pathtoindex = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\index";
+		IndexReader reader =DirectoryReader.open(FSDirectory.open(Paths.get(pathtoindex)));
+		//Print the total number of documents in the corpus
 
-	public static void checkindex() throws IOException
- {
-	 String PathtoIndex = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\index";
-	 IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get( (PathtoIndex))));
+		System.out.println("Total number of documents in the corpus: "+reader.maxDoc());                            
 
-	 
+		                               
 
-	//Print the total number of documents in the corpus
+		                //Print the number of documents containing the term "new" in <field>TEXT</field>.
 
-	System.out.println("Total number of documents in the corpus: "+reader.maxDoc());                            
+		                System.out.println("Number of documents containing the term \"new\" for field \"TEXT\": "+reader.docFreq(new Term("TEXT", "new")));
 
-	                               
+		                               
 
-	                //Print the number of documents containing the term "new" in <field>TEXT</field>.
+		                //Print the total number of occurrences of the term "new" across all documents for <field>TEXT</field>.
 
-	                System.out.println("Number of documents containing the term \"new\" for field \"TEXT\": "+reader.docFreq(new Term("TEXT", "new")));
+		                System.out.println("Number of occurrences of \"new\" in the field \"TEXT\": "+reader.totalTermFreq(new Term("TEXT","new")));                                                       
 
-	                               
+		                                                               
 
-	                //Print the total number of occurrences of the term "new" across all documents for <field>TEXT</field>.
+		                Terms vocabulary = MultiFields.getTerms(reader, "TEXT");
+                                                            
+		                //Print the total number of documents that have at least one term for <field>TEXT</field>
 
-	                System.out.println("Number of occurrences of \"new\" in the field \"TEXT\": "+reader.totalTermFreq(new Term("TEXT","new")));                                                       
+		                System.out.println("Number of documents that have at least one term for this field: "+vocabulary.getDocCount());
 
-	                                                               
+		                            
 
-	                Terms vocabulary = MultiFields.getTerms(reader, "TEXT");
+		                //Print the total number of tokens for <field>TEXT</field>
 
-	                               
+		                System.out.println("Number of tokens for this field: "+vocabulary.getSumTotalTermFreq());
 
-	                //Print the size of the vocabulary for <field>TEXT</field>, applicable when the index has only one segment.
+		                               
 
-	                System.out.println("Size of the vocabulary for this field: "+vocabulary.size());
+		                //Print the total number of postings for <field>TEXT</field>
 
-	                               
+		                System.out.println("Number of postings for this field: "+vocabulary.getSumDocFreq());      
 
-	                //Print the total number of documents that have at least one term for <field>TEXT</field>
-
-	                System.out.println("Number of documents that have at least one term for this field: "+vocabulary.getDocCount());
-
-	                               
-
-	                //Print the total number of tokens for <field>TEXT</field>
-
-	                System.out.println("Number of tokens for this field: "+vocabulary.getSumTotalTermFreq());
-
-	                               
-
-	                //Print the total number of postings for <field>TEXT</field>
-
-	                System.out.println("Number of postings for this field: "+vocabulary.getSumDocFreq());      
-
-	                               
-
-	                //Print the vocabulary for <field>TEXT</field>
-
-	                TermsEnum iterator = vocabulary.iterator();
-
-	       BytesRef byteRef = null;
-
-	       System.out.println("\n*******Vocabulary-Start**********");
-
-	       while((byteRef = iterator.next()) != null) {
-
-	           String term = byteRef.utf8ToString();
-
-	           System.out.print(term+"\t");
-
-	       }
-
-	       System.out.println("\n*******Vocabulary-End**********");        
-
-	                reader.close();
- }
+		          reader.close();
+		
+	}
 }
+
+
