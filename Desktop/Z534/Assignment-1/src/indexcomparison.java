@@ -14,6 +14,7 @@ import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
@@ -31,17 +32,17 @@ public class indexcomparison {
 
 	private static IndexWriter indwriter;
 
-	public static void main(String args[]) throws CorruptIndexException, LockObtainFailedException, IOException {
+	public static void main(String args[]) throws CorruptIndexException, LockObtainFailedException, IOException ,IllegalArgumentException{
 		
 				
 		String inputfile ="C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\corpus";
+		
 		
 		index_standard(inputfile);   /*indexing using simple analyzer */
 		index_stop(inputfile);        /*indexing using stop analyzers */
 		index_simple(inputfile);    /*indexing using simple analyzer */
 		index_key(inputfile);          /*indexing using key analyzer */
 	}
-
 
 	public static void index_standard(String filepath) throws IOException {
 
@@ -175,7 +176,7 @@ public class indexcomparison {
 			int check = 0;
 
 			if (text != "") {
-				document.add(new TextField("TEXT", text, Field.Store.YES));
+				document.add(new StringField("TEXT", text, Field.Store.NO));
 				check++;
 			}
 
@@ -256,17 +257,17 @@ public class indexcomparison {
 		System.out.println("Total number of documents in the corpus: " + reader.maxDoc());
 
 		
-		Terms vocabulary = MultiFields.getTerms(reader, "TEXT");
+	Terms vocabulary = MultiFields.getTerms(reader, "TEXT");
 
+		System.out.println("size of vocabulary: " + vocabulary.size());
 		
-		
-		// Print the total number of tokens for <field>TEXT</field>
+ //Print the total number of tokens for <field>TEXT</field>
 
-		System.out.println("Number of tokens for this field: " + vocabulary.getSumTotalTermFreq());
+	System.out.println("Number of tokens for this field: " + vocabulary.getSumTotalTermFreq());
 
-		// Print the total number of postings for <field>TEXT</field>
+//	 Print the total number of postings for <field>TEXT</field>
 
-		System.out.println("Number of postings for this field: " + vocabulary.getSumDocFreq());
+	System.out.println("Number of postings for this field: " + vocabulary.getSumDocFreq());
 		
 		
 		

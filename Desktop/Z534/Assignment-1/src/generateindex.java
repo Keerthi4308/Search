@@ -33,7 +33,7 @@ public class generateindex {
 
 	public static void main(String args[]) throws CorruptIndexException,LockObtainFailedException, IOException{
 		
-		String indexPath = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\lindex";
+		String indexPath = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\indexp";
 		Directory dir = FSDirectory.open(Paths.get(indexPath));
 	    Analyzer analyzer = new StandardAnalyzer();
 		IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
@@ -179,7 +179,7 @@ public class generateindex {
 		   getstat();
 	}
 	public static void getstat() throws IOException {
-		String pathtoindex = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\index";
+		String pathtoindex = "C:\\Users\\cool\\Desktop\\Z534\\Assignment-1\\indexp";
 		IndexReader reader =DirectoryReader.open(FSDirectory.open(Paths.get(pathtoindex)));
 		//Print the total number of documents in the corpus
 
@@ -200,6 +200,8 @@ public class generateindex {
 		                                                               
 
 		                Terms vocabulary = MultiFields.getTerms(reader, "TEXT");
+		                
+		                System.out.println("size of vocabulary: " + vocabulary.size());
                                                             
 		                //Print the total number of documents that have at least one term for <field>TEXT</field>
 
