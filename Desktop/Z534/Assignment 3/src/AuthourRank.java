@@ -1,47 +1,39 @@
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 
+import org.apache.commons.collections15.BidiMap;
+import org.apache.commons.collections15.bidimap.TreeBidiMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import edu.uci.ics.jung.algorithms.scoring.PageRank;
-import edu.uci.ics.jung.graph.Hypergraph;
-import edu.uci.ics.jung.graph.SetHypergraph;
-
+import edu.uci.ics.jung.graph.DirectedGraph;
+import edu.uci.ics.jung.graph.DirectedSparseMultigraph;
+import edu.uci.ics.jung.graph.util.EdgeType;
 
 public class AuthourRank{
 	
-
-
 	public static void main(String args[]) throws IOException, ParseException {
-		
-		
-	   //extract vertice and edges from the file authors.net
-		
-		//read line by line so one line is input and find space in i it using /s as regex 
-		//implies bfr first space is node identifier, ....in next case bfr
-		//second space is second node identifier
-		
-		//or read line by line and save into array using line.split() and use first parameter,
-		//case 2 first 2 parameters
-	    
+
 		String filename = "C:\\Users\\cool\\Desktop\\Z534\\author.net";
 
 		File newfile = new File(filename);
 
 		String totalip = FileUtils.readFileToString(newfile, "UTF-8");
-		int Edgestart=0,i=1;
-		//String[] nodeid = new String[2000];
+		int Edgestart=0,i=1;		
+
+		DirectedGraph<Integer, Integer> g= new DirectedSparseMultigraph<Integer, Integer>();
 		
-		Hypergraph<Integer, Integer> g= new SetHypergraph<Integer, Integer>();
+		BidiMap <Integer, Integer> bmapid = new TreeBidiMap<Integer, Integer> ();
+		
 		
 		String[] lines = totalip.split("\\r?\\n");
 	    for (String line : lines) {
-	         //System.out.print(line);
 	         String[] content = line.split(" ");
-	        // System.out.println(content[0]);
 	         if(content[0].compareTo("*Vertices")==0)
 	         {
 	        	 continue;
@@ -53,41 +45,61 @@ public class AuthourRank{
 	         }
 	         if(Edgestart!=0)
 	         {
-	        		HashSet<Integer>h =new HashSet<Integer>();
-	        		h.add(Integer.parseInt(content[0]));
-	        		h.add(Integer.parseInt(content[1]));
-	        		g.addEdge(i, h);
+	        		g.addEdge(i, Integer.parseInt(content[0]), Integer.parseInt(content[1]), EdgeType.DIRECTED);
+	     
 	        		i++;
 	         }
 	         else
+	         {
 	        	 g.addVertex(Integer.parseInt(content[0]));
 	         
-	         
+                 String label= content[1].replace("\"", " ").trim();
+                 bmapid.put(Integer.parseInt(label), Integer.parseInt(content[0]));	     
+	         }
 	      }
-	      
-	 	System.out.println("Vertices: " + g.getVertexCount() + "Edges: " +g.getEdgeCount()); 
-	 	
+	     	    
 	 	PageRank<Integer, Integer> pg= new PageRank<Integer,Integer>(g,0.1);
 	 	
 	 	pg.setTolerance(0.85);
 	 	
-	 	//pg.setMaxIterations(3);
-	 	
 	 	pg.evaluate();
 	 	
-	 	
-	 	HashMap<Integer, Double>hresult =new HashMap<Integer, Double>();
-	 	
+       HashMap<Integer, Double>hresult =new HashMap<Integer, Double>();
+	
+	 	 	
 	 	for(int vertex: g.getVertices())
 	 	{
 	 	   hresult.put(vertex, pg.getVertexScore(vertex));
 	 	}
-	 	
-	 	System.out.println(hresult.entrySet());
-	 	
+	 			
+		//Top 10 authors
+		
+		List<Double> l = new ArrayList<Double>(hresult.values());
+		l.sort(Collections.reverseOrder());
+		l = l.subList(0,10);
+		int count =0;
+		System.out.println("TOP TEN RANKED AUTHORS");
+		while(count!=10)
+		{
+			for(int author: hresult.keySet())
+		    {
+			      if(hresult.get(author)==l.get(count))
+			      {
+			    	  
+		         	  System.out.println("For author: "+ bmapid.getKey(author) + " Score "+ l.get(count));
+			    	  break;
+			      }
+	       	}
+			
+			count++;
+	    }
+		
+	
 	 	//Page rank with prior
 	 	
-	 	AuthorRankwithQuery.PageRankPriors(g);
+	 	AuthorRankwithQuery.PageRankPriors(g,bmapid,"Data Mining");
+	 	
+	 	AuthorRankwithQuery.PageRankPriors(g,bmapid,"Information Retrieval");
 				
 	}
 
